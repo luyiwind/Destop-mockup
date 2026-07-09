@@ -79,31 +79,46 @@ export function ControlPanel({
         <section className="space-y-4">
           <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest flex justify-between items-center">
             Media Assets
-            <span className="text-[9px] lowercase tracking-normal">Local files only</span>
+            <span className="text-[9px] lowercase tracking-normal">Local or URL</span>
           </h3>
-          <div className="space-y-2">
-            <label className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] flex justify-between items-center transition-all cursor-pointer group">
-              <span className="text-white/70 flex items-center gap-2 group-hover:text-white/90">
-                <Upload className="w-4 h-4 text-white/40 group-hover:text-white/70" /> 
-                {bgImage ? 'Background set' : 'Upload Background'}
-              </span>
-              <span className="text-[9px] text-white/30">BG</span>
-              <input type="file" accept="image/*" className="hidden" onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) setBgImage(URL.createObjectURL(file));
-              }} />
-            </label>
-            <label className="w-full py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] flex justify-between items-center transition-all cursor-pointer group">
-              <span className="text-white/70 flex items-center gap-2 group-hover:text-white/90">
-                <MonitorSmartphone className="w-4 h-4 text-white/40 group-hover:text-white/70" /> 
-                {videoSrc ? 'Video set' : 'Upload Screen Video'}
-              </span>
-              <span className="text-[9px] text-white/30">VID</span>
-              <input type="file" accept="video/*" className="hidden" onChange={e => {
-                const file = e.target.files?.[0];
-                if (file) setVideoSrc(URL.createObjectURL(file));
-              }} />
-            </label>
+          <div className="space-y-4">
+            {/* Background Source */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                 <input 
+                   type="text" 
+                   placeholder="Background Image URL" 
+                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
+                   onChange={e => setBgImage(e.target.value || null)}
+                 />
+                 <label className="shrink-0 flex items-center justify-center w-9 h-9 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg cursor-pointer transition-colors group relative" title="Upload Local Image">
+                    <Upload className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                    <input type="file" accept="image/*" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) setBgImage(URL.createObjectURL(file));
+                    }} />
+                 </label>
+              </div>
+            </div>
+
+            {/* Video Source */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                 <input 
+                   type="text" 
+                   placeholder="Screen Video URL" 
+                   className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white/90 placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
+                   onChange={e => setVideoSrc(e.target.value || null)}
+                 />
+                 <label className="shrink-0 flex items-center justify-center w-9 h-9 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg cursor-pointer transition-colors group relative" title="Upload Local Video">
+                    <Upload className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                    <input type="file" accept="video/*" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) setVideoSrc(URL.createObjectURL(file));
+                    }} />
+                 </label>
+              </div>
+            </div>
           </div>
         </section>
 
