@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, MonitorSmartphone, Droplets, Sparkles, Sun, Settings2, RotateCcw } from 'lucide-react';
+import { Upload, MonitorSmartphone, Droplets, Sparkles, Sun, Settings2, RotateCcw, Loader2 } from 'lucide-react';
 import { TransformState } from '../types';
 
 interface ControlPanelProps {
@@ -30,6 +30,8 @@ export function ControlPanel({
   const [pos, setPos] = useState({ x: 24, y: 24 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, panelX: 0, panelY: 0 });
+
+  const [isAligning, setIsAligning] = useState(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('.no-drag')) return;
@@ -77,10 +79,99 @@ export function ControlPanel({
       <div className="p-6 pt-2 overflow-y-auto no-drag space-y-8 custom-scrollbar">
         {/* Media Uploads */}
         <section className="space-y-4">
-          <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest flex justify-between items-center">
-            Media Assets
-            <span className="text-[9px] lowercase tracking-normal">Local or URL</span>
-          </h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-widest flex items-center gap-2">
+              Media Assets
+              <span className="text-[9px] lowercase tracking-normal text-white/20">Local or URL</span>
+            </h3>
+            <button 
+              disabled={isAligning}
+              onClick={async () => {
+                if (!bgImage) return alert("Please set a background image first.");
+                setIsAligning(true);
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                
+                const processImage = async (imgObj?: HTMLImageElement) => {
+                  try {
+                    let bodyData: any = {};
+                    if (imgObj) {
+                        bodyData.width = imgObj.width;
+                        bodyData.height = imgObj.height;
+                    } else {
+                        // Guess reasonable defaults if image fails to load in browser due to CORS
+                        bodyData.width = 1920; 
+                        bodyData.height = 1080;
+                    }
+                    
+                    if (bgImage.startsWith('data:') || bgImage.startsWith('blob:')) {
+                       if (!imgObj) throw new Error("Cannot process local image");
+                       // draw to canvas
+                       const canvas = document.createElement('canvas');
+                       canvas.width = imgObj.width;
+                       canvas.height = imgObj.height;
+                       const ctx = canvas.getContext('2d');
+                       if (ctx) {
+                           ctx.drawImage(imgObj, 0, 0);
+                           bodyData.image = canvas.toDataURL('image/jpeg', 0.8);
+                       }
+                    } else {
+                       bodyData.imageUrl = bgImage;
+                    }
+                    
+                    const res = await fetch('/api/analyze-image', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(bodyData)
+                    });
+                    
+                    if (res.status === 404) {
+                       throw new Error("Backend API not found. This feature is not available on static hosting like GitHub Pages.");
+                    }
+                    if (!res.ok) {
+                       const errData = await res.json().catch(() => ({}));
+                       throw new Error(errData.error || "Failed to analyze image");
+                    }
+                    const data = await res.json();
+                    
+                    if (data) {
+                      setTransform(prev => ({
+                        ...prev,
+                        tx: data.tx ?? prev.tx,
+                        ty: data.ty ?? prev.ty,
+                        rx: data.rx ?? prev.rx,
+                        ry: data.ry ?? prev.ry,
+                        rz: data.rz ?? prev.rz,
+                        width: data.width ?? prev.width,
+                        height: data.height ?? prev.height,
+                      }));
+                    }
+                  } catch (e: any) {
+                    console.error(e);
+                    alert(e.message || "Failed to auto-align. Make sure the backend is running and the image is accessible.");
+                  } finally {
+                    setIsAligning(false);
+                  }
+                };
+
+                img.onload = () => processImage(img);
+                img.onerror = () => {
+                   if (bgImage.startsWith('http')) {
+                       // Proceed anyway, let backend fetch it
+                       processImage();
+                   } else {
+                       alert("Failed to load image for analysis.");
+                       setIsAligning(false);
+                   }
+                };
+                img.src = bgImage;
+              }}
+              className={`px-2 py-1 ${isAligning ? 'bg-purple-500/10 text-purple-400/50' : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300'} border border-purple-500/30 rounded text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1`}
+            >
+              {isAligning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              {isAligning ? 'Aligning...' : 'Magic Align'}
+            </button>
+          </div>
           <div className="space-y-4">
             {/* Background Source */}
             <div className="space-y-2">
